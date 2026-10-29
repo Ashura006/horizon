@@ -8,6 +8,12 @@ from tools import parity
 
 
 class ParityRunnerTests(unittest.TestCase):
+    def test_probes_build_incrementally_on_runners_that_turn_it_off(self):
+        with mock.patch.dict(os.environ, {"CARGO_INCREMENTAL": "0", "CARGO_BUILD_JOBS": "4"}):
+            environment = parity.run_environment()
+        self.assertNotIn("CARGO_INCREMENTAL", environment)
+        self.assertEqual(environment["CARGO_PROFILE_RELEASE_INCREMENTAL"], "true")
+
     def test_dep_info_keeps_escaped_spaces(self):
         with tempfile.TemporaryDirectory() as temp:
             binary = Path(temp) / "probe"

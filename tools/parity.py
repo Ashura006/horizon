@@ -594,6 +594,11 @@ def java_sources(arguments):
 def run_environment(reuse_oracles=False):
     environment = dict(os.environ, CARGO_TARGET_DIR=str(TARGET), PYTHONDONTWRITEBYTECODE="1", HORIZON_NO_AUDIO="1", **PROFILE)
     environment.pop("CARGO_BUILD_JOBS", None)
+    # The profiles' incremental settings, not the runners' CARGO_INCREMENTAL=0 (tools/ci/runner-env.sh, for sccache):
+    # probes rebuild pull request after pull request in one target, where sccache misses the changed crates anyway.
+    # A fast horizon-client after a one-function edit: 96-104 s with sccache, 5-6 s incremental (Mac mini,
+    # 2026-10-29). Dependencies are never incremental and still come from sccache.
+    environment.pop("CARGO_INCREMENTAL", None)
     if reuse_oracles:
         # tools/parity_shim.py stands in for java and javac and replays unchanged oracle runs.
         SHIM.mkdir(parents=True, exist_ok=True)
