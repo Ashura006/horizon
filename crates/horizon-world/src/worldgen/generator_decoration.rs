@@ -338,6 +338,12 @@ impl Decoration {
         };
         let mut stats = DecorateStats::default();
         let blocks = self.blocks;
+        // The blocks' facts: `BlockState.isSolidRender` and the rest, the
+        // structure pieces ask them of the blocks around them.
+        let tree_blocks = self
+            .bindings
+            .tree_blocks()
+            .map_err(|e| resource(e.to_string()))?;
         // ChunkGenerator.getWritableArea: the chunk's minimum Y + 1 to its maximum Y.
         let chunk_box = BoundingBox::new(
             [center.x * 16, min_y + 1, center.z * 16],
@@ -375,6 +381,7 @@ impl Decoration {
                             start,
                             world,
                             &structures.resources,
+                            &tree_blocks,
                             random,
                             chunk_box,
                             &mut place_feature,
@@ -872,6 +879,33 @@ impl PlacementContext for World<'_> {
         }
         self.entities.push(nbt);
         Ok(())
+    }
+    /// SpikeFeature.placeSpike: the crystal is a fresh entity of the region,
+    /// saved with the chunk.
+    fn spawn_end_crystal(
+        &mut self,
+        position: [f64; 3],
+        yaw: f32,
+        beam_target: Option<[i32; 3]>,
+        invulnerable: bool,
+    ) -> Result<(), PlacementQueryError> {
+        use crate::nbt::Tag;
+        let mut nbt = crate::nbt::Compound::new();
+        nbt.insert("id".into(), Tag::String("minecraft:end_crystal".into()));
+        nbt.insert(
+            "Pos".into(),
+            Tag::List(position.iter().map(|v| Tag::Double(v.to_bits())).collect()),
+        );
+        nbt.insert(
+            "Rotation".into(),
+            Tag::List(vec![Tag::Float(yaw.to_bits()), Tag::Float(0)]),
+        );
+        nbt.insert("Invulnerable".into(), Tag::Byte(i8::from(invulnerable)));
+        nbt.insert("ShowBottom".into(), Tag::Byte(1));
+        if let Some(b) = beam_target {
+            nbt.insert("beam_target".into(), Tag::IntArray(b.to_vec()));
+        }
+        self.add_entity(nbt)
     }
     fn set_block_entity(
         &mut self,
