@@ -1643,7 +1643,7 @@ impl Game<'_> {
                     }
                 }
                 MobEvent::Experience { at, amount } => self.spawn_breeding_orb(at, amount),
-                MobEvent::AxolotlSupportPlayer => {
+                MobEvent::AxolotlSupportPlayer { mob } => {
                     let previous = self
                         .potions
                         .effects
@@ -1662,6 +1662,12 @@ impl Game<'_> {
                         .effects
                         .list
                         .retain(|e| e.id != "mining_fatigue");
+                    let source = self
+                        .mobs
+                        .iter()
+                        .find(|m| m.id == mob)
+                        .map(|m| self.mob_entity(m));
+                    self.trigger_effects_changed(source);
                 }
                 MobEvent::DolphinTreasure { mob } => {
                     // ServerLevel.findNearestMapStructure(#dolphin_located, 50).
@@ -4165,6 +4171,7 @@ impl Game<'_> {
                 .get(&stack.item)
                 .map_or(0, |i| i.max_damage);
             if max > 0 {
+                self.trigger_item_durability(&stack);
                 let loss = self.durability_loss(&stack, 16);
                 let slot = self.held_slot();
                 if let Some(held) = self.stack_in_mut(slot).as_mut() {
