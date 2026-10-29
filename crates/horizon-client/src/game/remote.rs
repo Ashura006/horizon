@@ -353,6 +353,9 @@ impl Game<'_> {
         let lang = Arc::new(horizon_client::net::load_language(&root));
         let view = client_view_distance(self.settings.render_distance);
         if local.is_none() {
+            // Only a single-player world gets an auto icon.
+            self.world_icon = None;
+            self.world_icon_attempt = None;
             horizon_client::crash::set_detail(
                 "Server",
                 horizon_client::net::shown_address(address),
@@ -573,6 +576,8 @@ impl Game<'_> {
         self.streaming.paused = true;
         self.world = World::new(self.res.facts().air, 0);
         self.player = None;
+        self.world_icon = None;
+        self.world_icon_attempt = None;
         // Out of the server's bed: InBedChatScreen goes with the level.
         self.sleeping = None;
         self.sleep_timer = 0;
